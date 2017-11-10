@@ -35,7 +35,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         exists: function () {
             let searchBooleanResult = searchDuration(weekBinaryArray, weekBinaryArrayBank, duration);
 
-            return (searchBooleanResult < -1);
+            return (searchBooleanResult !== -1);
         },
 
         /**
@@ -47,9 +47,9 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          */
         format: function (template) {
             let searchResultTimeHH = searchDurationTime(weekBinaryArray, weekBinaryArrayBank, duration);
-            const timeString = numberToTime(searchResultTimeHH);
+            const timeString = numberToTime(searchResultTimeHH, 5);
 
-            template.replace('%HH', timeString);
+            template.replace('%HH:%MM', timeString);
 
             return template;
         },
@@ -158,7 +158,7 @@ function searchDuration(weekBinaryArrSchedule, weekBinaryArrBank, duration) {
         if (searchArr[i] === 0) {
             counter++;
             if (counter === (duration - 1)) {
-                console.info('найдено');
+                console.info(i - duration);
 
                 return i - duration;
             }
@@ -176,9 +176,9 @@ function objToBinaryArrayBankWeek(obj) {
     let numberTo = stringTimeToNumberBankDay(obj.to);
     let BinaryArrayBankWeek = [];
     BinaryArrayBankWeek = fillArr(BinaryArrayBankWeek, MINUTES_IN_WEEK, 1);
-    for (let i = 1; i < 8; i++) {
-        for (let y = numberFrom * i; y < numberTo * i; y++) {
-            BinaryArrayBankWeek[y - 1] = 0;
+    for (let i = 0; i < 7; i++) {
+        for (let y = numberFrom + i * MINUTES_IN_DAY; y < numberTo + i * MINUTES_IN_DAY; y++) {
+            BinaryArrayBankWeek[y] = 0;
         }
     }
 
@@ -191,7 +191,7 @@ function stringTimeToNumberBankDay(stringTime) {
     const timeMM = Number(timeStringArray[1].split('+')[0]);
     const timeZone = Number(timeStringArray[1].split('+')[1]);
 
-    return timeHH - timeZone * 60 + timeMM;
+    return (timeHH - timeZone) * 60 + timeMM;
 
 }
 
@@ -201,9 +201,18 @@ function searchDurationTime(weekBinaryArray, weekBinaryArrayBank, duration) {
     }
 }
 
-function numberToTime(number) {
-    const days = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
-    let timeString = days.indexOf(Math.floor(number / MINUTES_IN_DAY));
+function numberToTime(number, timeZone) {
+    if (number !== -1) {
+        const days = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
+        const numDay = Math.floor(number / MINUTES_IN_DAY);
+        const numHH = Math.floor((number % MINUTES_IN_DAY) / 60);
+        const numMM = (number % MINUTES_IN_DAY) % 60;
+        let timeString = numHH + timeZone + ':' + numMM + ' (' + days[numDay] + ')';
+        console.info(timeString);
 
-    return timeString;
+
+        return timeString;
+    }
+
+    return 'NN';
 }
