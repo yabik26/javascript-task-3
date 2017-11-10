@@ -1,8 +1,8 @@
 'use strict';
 
-//Constants
+// Constants
 const MINUTES_IN_DAY = 24 * 60;
-const MINUTES_IN_WEEK = 7 * MINUTES_IN_DAY ;
+const MINUTES_IN_WEEK = 7 * MINUTES_IN_DAY;
 
 
 /**
@@ -20,26 +20,22 @@ exports.isStar = true;
  * @returns {Object}
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
-    //console.info(schedule, duration, workingHours);
-
-    /* Проходим по ключам объекта
-    *  Для каждого ключа получаем значение
-    *  Преобразуем значение в массив 0 и 1
-    *  Складываем через логическое И с тем, что записано в массиве "Неделя"
-    */
-
+    // получаем расписание в виде массива нулей и единиц по минутам, где 1 - это занят, 0 - это свободен
     const weekBinaryArray = getWeekBinaryArray(schedule);
+
+    // получаем расписание работы банка в виде массива нулей и единиц по минутам,  где 1 - это закрыт, 0 - это открыт
     const weekBinaryArrayBank = objToBinaryArrayBankWeek(workingHours);
 
     return {
-          /**
+
+        /**
          * Найдено ли время
          * @returns {Boolean}
          */
         exists: function () {
             let searchBooleanResult = searchDuration(weekBinaryArray, weekBinaryArrayBank, duration);
 
-            return searchBooleanResult !== -1
+            return (searchBooleanResult < -1);
         },
 
         /**
@@ -50,12 +46,10 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {String}
          */
         format: function (template) {
-            let searchResultTime = searchDurationTime(weekBinaryArray, weekBinaryArrayBank, duration);
-            console.info()
+            let searchResultTimeHH = searchDurationTime(weekBinaryArray, weekBinaryArrayBank, duration);
+            const timeString = numberToTime(searchResultTimeHH);
 
-           // const timeString = template.replace('%HH', );
-
-
+            template.replace('%HH', timeString);
 
             return template;
         },
@@ -71,17 +65,17 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     };
 };
 
-function getWeekBinaryArray(schedule, bankWorkingHours){
-    let values = Object.keys(schedule).map(function(key) {
+function getWeekBinaryArray(schedule) {
+    let values = Object.keys(schedule).map(function (key) {
         return schedule[key];
     });
 
     let weekSchedule = [];
-    weekSchedule=fillArr(weekSchedule, MINUTES_IN_WEEK, 1);
+    weekSchedule = fillArr(weekSchedule, MINUTES_IN_WEEK, 1);
 
-    values.forEach(function(item) {
+    values.forEach(function (item) {
         let personWeekScheduleArray = [];
-        personWeekScheduleArray=fillArr(personWeekScheduleArray, MINUTES_IN_WEEK, 0);
+        personWeekScheduleArray = fillArr(personWeekScheduleArray, MINUTES_IN_WEEK, 0);
 
         item.forEach(function (elem) {
             const binaryArray = objToBinaryArray(elem);
@@ -90,7 +84,7 @@ function getWeekBinaryArray(schedule, bankWorkingHours){
         weekSchedule = multiplyBinaryArrays(personWeekScheduleArray, weekSchedule);
     });
 
-        return weekSchedule;
+    return weekSchedule;
 }
 
 function fillArr(arr, length, num) {
@@ -120,8 +114,6 @@ function robDateToNumber(robDate) {
     const day = dateArray[0];
     const time = dateArray[1].split('+')[0];
     const timeZone = dateArray[1].split('+')[1];
-
-    console.info('day: ' + day + ', time: ' + time + ', timeZone: ' + timeZone);
 
     return dayToMinutes(day) + timeToMinutes(time, timeZone);
 }
@@ -159,20 +151,23 @@ function multiplyBinaryArrays(arr1, arr2) {
 }
 
 function searchDuration(weekBinaryArrSchedule, weekBinaryArrBank, duration) {
-    let searchArr = multiplyBinaryArrays(weekBinaryArrSchedule, weekBinaryArrBank);
+    let searchArr = sumBinaryArrays(weekBinaryArrSchedule, weekBinaryArrBank);
     let counter = 0;
     for (let i = 0; i < searchArr.length; i++) {
 
         if (searchArr[i] === 0) {
             counter++;
-            if (counter === duration) {
-                return i - duration + 1;
+            if (counter === (duration - 1)) {
+                console.info('найдено');
+
+                return i - duration;
             }
         }
         else {
             counter = 0;
         }
     }
+
     return -1;
 }
 
@@ -183,7 +178,7 @@ function objToBinaryArrayBankWeek(obj) {
     BinaryArrayBankWeek = fillArr(BinaryArrayBankWeek, MINUTES_IN_WEEK, 1);
     for (let i = 1; i < 8; i++) {
         for (let y = numberFrom * i; y < numberTo * i; y++) {
-            BinaryArrayBankWeek[y-1] = 0;
+            BinaryArrayBankWeek[y - 1] = 0;
         }
     }
 
@@ -196,11 +191,19 @@ function stringTimeToNumberBankDay(stringTime) {
     const timeMM = Number(timeStringArray[1].split('+')[0]);
     const timeZone = Number(timeStringArray[1].split('+')[1]);
 
-    return timeHH-timeZone * 60 + timeMM;
+    return timeHH - timeZone * 60 + timeMM;
 
 }
 
-function searchDurationTime (weekBinaryArray, weekBinaryArrayBank, duration) {
-    let value = searchDuration(weekBinaryArray, weekBinaryArrayBank, duration);
-    console.info(value);
+function searchDurationTime(weekBinaryArray, weekBinaryArrayBank, duration) {
+    if (searchDuration(weekBinaryArray, weekBinaryArrayBank, duration) !== -1) {
+        return searchDuration(weekBinaryArray, weekBinaryArrayBank, duration);
+    }
+}
+
+function numberToTime(number) {
+    const days = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
+    let timeString = days.indexOf(Math.floor(number / MINUTES_IN_DAY));
+
+    return timeString;
 }
