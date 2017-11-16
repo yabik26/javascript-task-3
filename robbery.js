@@ -111,17 +111,17 @@ function objToBinaryArray(obj) {
 
 function robDateToNumber(robDate) {
     const dateArray = robDate.split(' ');
-    const day = dateArray[0];
+    const day = String(dateArray[0]);
     const time = dateArray[1].split('+')[0];
-    const timeZone = dateArray[1].split('+')[1];
+    const timeZone = Number(dateArray[1].split('+')[1]);
 
     return dayToMinutes(day) + timeToMinutes(time, timeZone);
 }
 
-function dayToMinutes(day) {
+function dayToMinutes(stringDay) {
     const days = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
 
-    return days.indexOf(day) * MINUTES_IN_DAY;
+    return days.indexOf(stringDay) * MINUTES_IN_DAY;
 }
 
 function timeToMinutes(time, timeZone) {
@@ -174,6 +174,7 @@ function searchDuration(weekBinaryArrSchedule, weekBinaryArrBank, duration) {
 function objToBinaryArrayBankWeek(obj) {
     let numberFrom = stringTimeToNumberBankDay(obj.from);
     let numberTo = stringTimeToNumberBankDay(obj.to);
+    console.info (numberFrom + '  ' + numberTo);
     let BinaryArrayBankWeek = [];
     BinaryArrayBankWeek = fillArr(BinaryArrayBankWeek, MINUTES_IN_WEEK, 1);
     for (let i = 0; i < 7; i++) {
@@ -191,7 +192,7 @@ function stringTimeToNumberBankDay(stringTime) {
     const timeMM = Number(timeStringArray[1].split('+')[0]);
     const timeZone = Number(timeStringArray[1].split('+')[1]);
 
-    return (timeHH - timeZone) * 60 + timeMM;
+    return (timeHH + timeZone) * 60 + timeMM;
 
 }
 
@@ -207,7 +208,7 @@ function numberToTime(number, timeZone) {
         const numDay = Math.floor(number / MINUTES_IN_DAY);
         const numHH = Math.floor((number % MINUTES_IN_DAY) / 60);
         const numMM = (number % MINUTES_IN_DAY) % 60;
-        let timeString = numHH + timeZone + ':' + numMM + ' (' + days[numDay] + ')';
+        let timeString = (numHH - timeZone) + ':' + numMM + ' (' + days[numDay] + ')';
         console.info(timeString);
 
 
